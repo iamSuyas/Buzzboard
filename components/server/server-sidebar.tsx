@@ -72,7 +72,7 @@ export const ServerSidebar= async({
             role={role}
             />
             <ScrollArea className="flex-1 px-3">
-                <div className="mt-2">
+                {/* <div className="mt-2">
                     <ServerSearch
                         data={[
                              {
@@ -113,8 +113,8 @@ export const ServerSidebar= async({
                         },
                     ]}
                     />
-                </div>
-                <Separator className="bg-zinc-200 dark:bg-zinc-700 rounded-md my-2 "  /> 
+                </div> */}
+                {/* <Separator className="bg-zinc-200 dark:bg-zinc-700 rounded-md my-2 "  />  */}
                 {!!textChannels?.length && (
                     <div className="mb-2">
                         <ServerSection
