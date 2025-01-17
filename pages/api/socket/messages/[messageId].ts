@@ -78,23 +78,11 @@ export default async function handler(
         res.status(401).json({error:"Unauthorized"});
     }
     if(req.method==="DELETE"){
-        message=await db.message.update({
+        await db.message.delete({
             where:{
                 id:messageId as string,
-            },
-            data:{
-                fileUrl:null,
-                content:"Deleted message",
-                deleted:true,
-            },
-            include:{
-                member:{
-                    include:{
-                        profile:true
-                    }
-                }
             }
-        })
+        });
     }
     if(req.method==="PATCH"){
         if(!isMessageOwner){

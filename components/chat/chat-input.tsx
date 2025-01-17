@@ -7,6 +7,7 @@ import { useForm } from "react-hook-form";
 import { Input } from "@/components/ui/input";
 import { Plus, Smile } from "lucide-react";
 import axios from "axios";
+import CryptoJS from "crypto-js";
 import qs from "query-string";
 import { useModal } from "@/hooks/use-modal-store";
 import { EmojiPicker } from "@/components/emoji-picker";
@@ -22,6 +23,11 @@ const formSchema = z.object({
   content: z.string().min(1),
 });
 
+
+const encryptMessage = (message: string, secretKey: string): string => {
+  return CryptoJS.AES.encrypt(message, secretKey).toString();
+};
+
 export const ChatInput = ({ apiUrl, query, name, type }: ChatInputProps) => {
   const { onOpen } = useModal();
   const router= useRouter()
@@ -34,11 +40,16 @@ export const ChatInput = ({ apiUrl, query, name, type }: ChatInputProps) => {
   const isLoading = form.formState.isSubmitting;
   const onSubmit = async (values: z.infer<typeof formSchema>) => {
     try {
+      const secretKey = process.env.NEXT_PUBLIC_SECRET_KEY;
+      if (!secretKey) {
+        throw new Error("Secret key not defined");
+      }
+      const encryptedContent = encryptMessage(values.content, secretKey);
       const url = qs.stringifyUrl({
         url: apiUrl,
         query,
       });
-      await axios.post(url, values);
+      await axios.post(url, {...values, content:encryptedContent});
       form.reset();
       router.refresh();
     } catch (error) {

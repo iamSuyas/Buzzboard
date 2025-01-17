@@ -16,6 +16,9 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { useModal } from "@/hooks/use-modal-store";
 import {useRouter, useParams} from "next/navigation";
+import CryptoJS from "crypto-js";
+
+
 interface ChatItemProps {
   id: string;
   content: string;
@@ -51,6 +54,10 @@ export const ChatItem = ({
   socketUrl,
   socketQuery,
 }: ChatItemProps) => {
+  const encryptMessage = (message: string, secretKey: string): string => {
+    return CryptoJS.AES.encrypt(message, secretKey).toString();
+  };
+  
   const params= useParams();
   const router=useRouter();
   const onMemberClick=()=>{
@@ -79,11 +86,16 @@ export const ChatItem = ({
   const isLoading=form.formState.isSubmitting;
   const onSubmit = async(values:z.infer<typeof formSchema>) => {
     try {
+      const secretKey = process.env.NEXT_PUBLIC_SECRET_KEY;
+      if (!secretKey) {
+        throw new Error("Secret key not defined");
+      }
+      const encryptedContent = encryptMessage(values.content, secretKey);
       const url=qs.stringifyUrl({
         url:`${socketUrl}/${id}`,
         query:socketQuery
       });
-      await axios.patch(url,values);
+      await axios.patch(url,{...values, content:encryptedContent});
       form.reset();
       setIsEditing(false);
     } catch (error) {

@@ -8,6 +8,7 @@ import { Fragment, useRef, ElementRef } from "react";
 import { ChatItem } from "./chat-item";
 import {format} from "date-fns";
 import { useChatSocket } from "@/hooks/use-chat-socket";
+import CryptoJS from "crypto-js";
 
 type MessageWithMemberWithProfile = Message & {
   member: Member & {
@@ -26,6 +27,12 @@ interface ChatMessagesProps {
   paramValue: string;
   type: "channel" | "conversation";
 }
+
+const decryptMessage = (ciphertext: string, secretKey: string): string => {
+  const bytes = CryptoJS.AES.decrypt(ciphertext, secretKey);
+  return bytes.toString(CryptoJS.enc.Utf8);
+};
+
 export const ChatMessages = ({
   name,
   member,
@@ -50,7 +57,8 @@ export const ChatMessages = ({
       paramKey,
       paramValue,
     });
-useChatSocket({queryKey, addKey, updateKey})
+useChatSocket({queryKey, addKey, updateKey});
+const secretKey = process.env.NEXT_PUBLIC_SECRET_KEY;
   if (status === "pending") {
     return (
       <div className="flex flex-col flex-1 justify-center items-center">
@@ -79,21 +87,27 @@ useChatSocket({queryKey, addKey, updateKey})
       <div className="flex flex-col-reverse mt-auto">
         {data?.pages?.map((group, i) => (
           <Fragment key={i}>
-            {group.items.map((message: MessageWithMemberWithProfile) => (
-              <ChatItem
-              key={message.id}
-                id={message.id}
-                content={message.content}
-                member={message.member}
-                timestamp={format(new Date(message.createdAt), DATE_FORMAT)}
-                fileUrl={message.fileUrl}
-                deleted={message.deleted}
-                currentMember={member}
-                isUpdated={message.updatedAt!== message.createdAt}
-                socketUrl={socketUrl}
-                socketQuery={socketQuery}
-              />
-            ))}
+            {group.items.map((message: MessageWithMemberWithProfile) => {
+              const decryptedContent = secretKey
+                ? decryptMessage(message.content, secretKey)
+                : message.content;
+
+              return (
+                <ChatItem
+                  key={message.id}
+                  id={message.id}
+                  content={decryptedContent}
+                  member={message.member}
+                  timestamp={format(new Date(message.createdAt), DATE_FORMAT)}
+                  fileUrl={message.fileUrl}
+                  deleted={message.deleted}
+                  currentMember={member}
+                  isUpdated={message.updatedAt !== message.createdAt}
+                  socketUrl={socketUrl}
+                  socketQuery={socketQuery}
+                />
+              );
+            })}
           </Fragment>
         ))}
       </div>
